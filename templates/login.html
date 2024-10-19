@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+      <div class="bg-white p-8 rounded-lg shadow-md w-96">
+        <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
+        <div class="space-y-4">
+          <button
+            onclick="login('google')"
+            class="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600"
+          >
+            Login with Google
+          </button>
+          <button
+            onclick="login('facebook')"
+            class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          >
+            Login with Facebook
+          </button>
+          <button
+            onclick="login('github')"
+            class="w-full bg-gray-800 text-white py-2 rounded hover:bg-gray-900"
+          >
+            Login with GitHub
+          </button>
+          <button
+            onclick="login('jira')"
+            class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          >
+            Login with Jira
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function login(provider) {
+        window.location.href = `/sso/login/${provider}`;
+      }
+    </script>
+  </body>
+</html>

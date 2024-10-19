@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div>
+                        <a href="#" class="flex items-center py-4 px-2">
+                            <span class="font-semibold text-gray-500 text-lg">Dashboard</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="#" id="enable2FABtn" class="py-2 px-2 font-medium text-gray-500 rounded hover:bg-green-500 hover:text-white transition duration-300">Enable 2FA</a>
+                    <a href="#" id="disable2FABtn" class="py-2 px-2 font-medium text-gray-500 rounded hover:bg-red-500 hover:text-white transition duration-300">Disable 2FA</a>
+                    <a href="#" onclick="logout()" class="py-2 px-2 font-medium text-white bg-green-500 rounded hover:bg-green-400 transition duration-300">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto mt-10">
+        <h1 class="text-2xl font-bold mb-5">Welcome to your Dashboard</h1>
+        <div id="content" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <!-- Dashboard content will be loaded here -->
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('enable2FABtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const response = await fetch('/sso/enable_2fa', { method: 'POST' });
+            const result = await response.json();
+            alert(result.message);
+        });
+
+        document.getElementById('disable2FABtn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const response = await fetch('/sso/disable_2fa', { method: 'POST' });
+            const result = await response.json();
+            alert(result.message);
+        });
+
+        // Function to load dashboard content
+        async function loadDashboardContent() {
+            const response = await fetch('/api/dashboard_data');
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('content').innerHTML = `
+                    <p>Email: ${data.email}</p>
+                    <p>Username: ${data.username}</p>
+                    <p>2FA Enabled: ${data.otp_enabled ? 'Yes' : 'No'}</p>
+                `;
+            } else {
+                document.getElementById('content').innerHTML = '<p>Failed to load dashboard data.</p>';
+            }
+        }
+
+        function logout() {
+            // Implement logout functionality
+            fetch('/sso/logout', {
+                method: 'GET',
+                credentials: 'include'
+            }).then(() => {
+                window.location.href = '/login';
+            });
+        }
+
+        // Load dashboard content when the page loads
+        loadDashboardContent();
+    </script>
+</body>
+</html>

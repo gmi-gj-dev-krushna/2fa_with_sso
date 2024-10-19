@@ -1,0 +1,31 @@
+# Virtual environment
+ev/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Certificate and key files
+*.pem
+
+# Compiled Python files
+*.pyc
+
+# Python egg metadata, regenerated from source files by setuptools.
+/*.egg-info
+/*.egg
