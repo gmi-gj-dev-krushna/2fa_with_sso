@@ -29,3 +29,6 @@ Thumbs.db
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
 /*.egg
+
+Dockerfile
+docker-compose.yml
