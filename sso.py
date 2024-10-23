@@ -19,7 +19,7 @@ import string
 from functools import wraps
 from models import db, User, Session, OAuthProvider
 from flask_mail import Message
-from app import mail
+from extensions import mail
 from flask import render_template_string
 from uuid import uuid4
 from sqlalchemy.exc import SQLAlchemyError

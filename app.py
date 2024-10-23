@@ -1,10 +1,7 @@
 from flask import Flask, render_template
 from dotenv import load_dotenv
 import os
-from models import db
-from flask_mail import Mail
-
-mail = Mail()
+from extensions import db, mail
 
 load_dotenv()
 
@@ -57,10 +54,11 @@ def create_app():
     return app
 
 
-# Expose the app variable
-app = create_app()
-
 if __name__ == "__main__":
+    app = create_app()
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    # Run the app with SSL certificates
+    app.run(
+        debug=True,
+    )
