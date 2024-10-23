@@ -237,17 +237,16 @@ def register():
         data = request.form
         email = data.get("email")
         password = data.get("password")
-        username = data.get("username")
 
-        if not email or not password or not username:
-            return jsonify({"error": "Email, password, and username are required"}), 400
+        if not email or not password:
+            return jsonify({"error": "Email and password are required"}), 400
 
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             return jsonify({"error": "User already exists"}), 400
 
         hashed_password = generate_password_hash(password)
-        new_user = User(email=email, username=username, password_hash=hashed_password)
+        new_user = User(email=email, password_hash=hashed_password)
 
         try:
             db.session.add(new_user)
@@ -256,12 +255,13 @@ def register():
             db.session.rollback()
             return jsonify({"error": "An error occurred while creating the user"}), 500
 
-        return jsonify({"message": "User registered successfully"}), 201
+        # Redirect the user to the login page after successful registration
+        return redirect(url_for("login"))
     return render_template("register.html")
 
 
 # User Login Route
-@sso_bp.route("/login", methods=["POST"])
+@sso_bp.route("/login", methods=["GET", "POST"])
 def email_login():
     data = request.form  # Handle form data instead of JSON
     email = data.get("email")
