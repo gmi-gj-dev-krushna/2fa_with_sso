@@ -90,7 +90,8 @@ def verify_token(f):
         token = request.cookies.get("access_token")
         session_id = request.cookies.get("session_id")
         if not token or not session_id:
-            return jsonify({"error": "Token or session is missing"}), 401
+            return redirect("/login")
+
         try:
             payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
             user = User.query.get(payload["user_id"])

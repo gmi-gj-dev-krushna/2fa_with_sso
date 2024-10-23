@@ -56,12 +56,13 @@ def create_app():
 
     return app
 
+
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():
         db.create_all()
     # Run the app with SSL certificates
     app.run(
-        ssl_context=None,
+        ssl_context=("cert.pem", "key.pem"),
         debug=True,
     )
