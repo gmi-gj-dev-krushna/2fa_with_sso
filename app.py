@@ -63,6 +63,5 @@ if __name__ == "__main__":
         db.create_all()
     # Run the app with SSL certificates
     app.run(
-        ssl_context=("cert.pem", "key.pem"),
         debug=True,
     )
