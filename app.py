@@ -1,7 +1,10 @@
 from flask import Flask, render_template
 from dotenv import load_dotenv
 import os
-from extensions import db, mail
+from models import db
+from flask_mail import Mail
+
+mail = Mail()
 
 load_dotenv()
 
