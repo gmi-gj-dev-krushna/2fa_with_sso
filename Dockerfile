@@ -19,11 +19,9 @@ COPY .env /app/.env
 # Expose port 5000 for Flask
 EXPOSE 5000
 
-
 # Copy SSL certificates
 COPY cert.pem /app/cert.pem
 COPY key.pem /app/key.pem
 
-
 # Run the Flask app
-CMD ["flask", "run", "--host=0.0.0.0", "--cert=cert.pem", "--key=key.pem"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5000", "--cert=cert.pem", "--key=key.pem"]

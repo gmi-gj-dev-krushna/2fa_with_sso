@@ -23,6 +23,7 @@ from app import mail
 from flask import render_template_string
 from uuid import uuid4
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -82,6 +83,7 @@ oauth.register(
 )
 
 
+# Helper Functions
 def verify_token(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -187,10 +189,10 @@ def generate_tokens(user):
     # Define expiration for access token
     access_token_expires = datetime.now(timezone.utc) + ACCESS_TOKEN_EXPIRES_IN
     access_token_payload = {
-        "user_id": str(user.id),  # Convert to string if needed
+        "user_id": str(user.id),
         "username": user.username,
         "email": user.email,
-        "exp": access_token_expires,  # Set expiration for access token
+        "exp": access_token_expires,
     }
 
     # Create access token
@@ -199,8 +201,8 @@ def generate_tokens(user):
     # Define expiration for refresh token
     refresh_token_expires = datetime.now(timezone.utc) + REFRESH_TOKEN_EXPIRES_IN
     refresh_token_payload = {
-        "user_id": str(user.id),  # Convert to string if needed
-        "exp": refresh_token_expires,  # Set expiration for refresh token
+        "user_id": str(user.id),
+        "exp": refresh_token_expires,
     }
 
     # Create refresh token
@@ -209,7 +211,7 @@ def generate_tokens(user):
     )
 
     # Create a new session in the database
-    session_id = str(uuid4())  # Generate a unique session ID
+    session_id = str(uuid4())
     new_session = Session(
         id=session_id,
         user_id=user.id,
@@ -218,15 +220,160 @@ def generate_tokens(user):
         expires_at=refresh_token_expires,
     )
 
-    # Attempt to save the session to the database
     try:
         db.session.add(new_session)
         db.session.commit()
     except SQLAlchemyError as e:
-        db.session.rollback()  # Rollback in case of error
+        db.session.rollback()
         raise
 
     return access_token, refresh_token, session_id
+
+
+# User Registration Route
+@sso_bp.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        data = request.form
+        email = data.get("email")
+        password = data.get("password")
+        username = data.get("username")
+
+        if not email or not password or not username:
+            return jsonify({"error": "Email, password, and username are required"}), 400
+
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({"error": "User already exists"}), 400
+
+        hashed_password = generate_password_hash(password)
+        new_user = User(email=email, username=username, password_hash=hashed_password)
+
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            return jsonify({"error": "An error occurred while creating the user"}), 500
+
+        return jsonify({"message": "User registered successfully"}), 201
+    return render_template("register.html")
+
+
+# User Login Route
+@sso_bp.route("/login", methods=["POST"])
+def email_login():
+    data = request.form  # Handle form data instead of JSON
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    if user.otp_enabled:
+        otp = generate_otp()
+        user.otp = otp
+        user.otp_expiry = datetime.now(timezone.utc) + OTP_EXPIRATION_TIME
+        db.session.commit()
+        send_otp_email(user.email, otp)
+        return redirect(url_for("sso.verify_otp_page", user_id=user.id))
+    else:
+        access_token, refresh_token, session_id = generate_tokens(user)
+        response = make_response(redirect(url_for("dashboard")))
+        response.set_cookie(
+            "access_token",
+            access_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=ACCESS_TOKEN_EXPIRES_IN.total_seconds(),
+        )
+        response.set_cookie(
+            "refresh_token",
+            refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=REFRESH_TOKEN_EXPIRES_IN.total_seconds(),
+        )
+        response.set_cookie(
+            "session_id",
+            session_id,
+            httponly=True,
+            secure=True,
+            samesite="Lax",
+            max_age=REFRESH_TOKEN_EXPIRES_IN.total_seconds(),
+        )
+        return response
+
+
+# Password Reset Request Route
+@sso_bp.route("/reset_password_request", methods=["POST"])
+def reset_password_request():
+    data = request.json
+    email = data.get("email")
+
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    otp = generate_otp()
+    user.otp = otp
+    user.otp_expiry = datetime.now(timezone.utc) + OTP_EXPIRATION_TIME
+
+    try:
+        db.session.commit()
+        send_otp_email(user.email, otp)
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "An error occurred while generating OTP"}), 500
+
+    return jsonify({"message": "OTP sent to the provided email address"}), 200
+
+
+# Password Reset Verification Route
+@sso_bp.route("/reset_password", methods=["POST"])
+def reset_password():
+    data = request.json
+    email = data.get("email")
+    otp = data.get("otp")
+    new_password = data.get("new_password")
+
+    if not email or not otp or not new_password:
+        return jsonify({"error": "Email, OTP, and new password are required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    current_time = datetime.now(timezone.utc)
+    if (
+        user.otp
+        and user.otp == otp
+        and user.otp_expiry
+        and current_time < user.otp_expiry
+    ):
+        user.password_hash = generate_password_hash(new_password)
+        user.otp = None
+        user.otp_expiry = None
+        try:
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            return (
+                jsonify({"error": "An error occurred while resetting the password"}),
+                500,
+            )
+        return jsonify({"message": "Password reset successfully"}), 200
+    else:
+        return jsonify({"error": "Invalid or expired OTP"}), 400
 
 
 @sso_bp.route("/login/<provider>")
@@ -380,20 +527,13 @@ def auth(provider):
             return response
 
     except OAuth2Error as e:
-        if provider == "jira" and "invalid_scope" in str(e):
-            return (
-                jsonify(
-                    {
-                        "error": "Invalid Jira app permissions. Please contact the administrator."
-                    }
-                ),
-                400,
-            )
+        print(f"OAuth2Error: {str(e)}")
         return (
             jsonify({"error": f"Authentication error with {provider}: {str(e)}"}),
             400,
         )
     except Exception as e:
+        print(f"Unexpected error: {str(e)}")
         return (
             jsonify(
                 {

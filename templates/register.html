@@ -3,19 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
+    <title>Register</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-      rel="stylesheet"
-    />
   </head>
   <body class="bg-gray-100">
     <div class="min-h-screen flex items-center justify-center">
       <div class="bg-white p-8 rounded-lg shadow-md w-96">
-        <h1 class="text-2xl font-bold mb-6 text-center">Login</h1>
+        <h1 class="text-2xl font-bold mb-6 text-center">Register</h1>
         <div class="space-y-4">
-          <form id="universal-login-form" action="/sso/login" method="POST">
+          <form id="register-form" action="/sso/register" method="POST">
             <div class="mb-4">
               <label for="email" class="block text-sm font-medium text-gray-700"
                 >Email</label
@@ -46,7 +42,7 @@
               type="submit"
               class="w-full bg-[#0065FF] text-white py-2 rounded hover:bg-blue-600"
             >
-              Login
+              Sign Up
             </button>
           </form>
 
@@ -107,8 +103,8 @@
           </button>
 
           <div class="text-center">
-            Don't have an account?
-            <a href="/register" class="text-blue-500">Register</a>
+            Already have an account?
+            <a href="/login" class="text-blue-500">Login</a>
           </div>
           
         </div>
